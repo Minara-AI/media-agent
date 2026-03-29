@@ -1,0 +1,18 @@
+name: wechat
+display_name: "微信公众号"
+auth_type: api_key
+auth_env_var: WECHAT_APP_ID
+content_format: html
+max_title_length: 64
+max_body_length: null
+supports_images: true
+image_upload: api
+image_sizes:
+  header: { width: 900, height: 383 }
+  thumb: { width: 200, height: 200 }
+status: v1.1  # not yet implemented
+notes: |
+  WeChat requires: appid + appsecret, IP whitelist on mp.weixin.qq.com,
+  content converted from markdown to HTML, cover image uploaded as material first.
+  Publishing flow: get access_token → upload cover image → create draft → submit publish.
+  Content may be rejected during platform review.

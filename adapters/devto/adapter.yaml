@@ -1,0 +1,11 @@
+name: devto
+display_name: "Dev.to"
+auth_type: api_key
+auth_env_var: DEVTO_API_KEY
+content_format: markdown
+max_title_length: 150
+max_body_length: null
+supports_images: true
+image_upload: url_reference
+image_sizes:
+  cover: { width: 1000, height: 420 }

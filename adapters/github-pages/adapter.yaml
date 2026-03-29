@@ -1,0 +1,11 @@
+name: github-pages
+display_name: "GitHub Pages"
+auth_type: git_push
+auth_env_var: null
+content_format: markdown
+max_title_length: null
+max_body_length: null
+supports_images: true
+image_upload: embedded
+image_sizes:
+  cover: { width: 1200, height: 630 }

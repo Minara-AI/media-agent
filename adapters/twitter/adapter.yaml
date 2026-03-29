@@ -1,0 +1,12 @@
+name: twitter
+display_name: "Twitter/X"
+auth_type: api_key
+auth_env_var: TWITTER_BEARER_TOKEN
+content_format: thread
+max_title_length: null
+max_body_length: 280  # per tweet
+supports_images: true
+image_upload: api
+image_sizes:
+  card: { width: 1200, height: 675 }
+status: v1.1  # not yet implemented

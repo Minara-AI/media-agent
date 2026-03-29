@@ -1,0 +1,7 @@
+.env
+.env.local
+*.bak
+.manifest.yaml.tmp
+node_modules/
+__pycache__/
+.DS_Store

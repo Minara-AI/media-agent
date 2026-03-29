@@ -1,0 +1,11 @@
+name: hashnode
+display_name: "Hashnode"
+auth_type: api_key
+auth_env_var: HASHNODE_API_KEY
+content_format: markdown
+max_title_length: null
+max_body_length: null
+supports_images: true
+image_upload: url_reference
+image_sizes:
+  cover: { width: 1600, height: 840 }
