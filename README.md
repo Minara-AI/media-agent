@@ -84,9 +84,10 @@ cd your-project && bash /path/to/excalidraw-skill/install.sh
 Configure in `.env`:
 
 ```bash
-IMAGE_PROVIDER=openai   # default, GPT Image, $0.005-0.08/image
-# IMAGE_PROVIDER=flux   # Replicate Flux 2, best photorealism, $0.015-0.055/image
-# IMAGE_PROVIDER=ideogram # Ideogram v3, best text-in-image (90-95% accuracy), ~$0.04/image
+IMAGE_PROVIDER=openrouter  # recommended, one key for LLM + images, Gemini Flash Image
+# IMAGE_PROVIDER=openai    # GPT Image, $0.005-0.08/image
+# IMAGE_PROVIDER=flux      # Replicate Flux 2, best photorealism, $0.015-0.055/image
+# IMAGE_PROVIDER=ideogram  # Ideogram v3, best text-in-image (90-95% accuracy), ~$0.04/image
 ```
 
 ## How it works

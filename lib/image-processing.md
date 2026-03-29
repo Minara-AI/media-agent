@@ -11,14 +11,55 @@ How to generate, resize, and manage images for posts.
 ## Image Generation — Configurable Backend
 
 The image provider is configured via `IMAGE_PROVIDER` in `.env`. Supported values:
-`openai` (default), `flux`, `ideogram`.
+`openrouter` (recommended), `openai`, `flux`, `ideogram`.
 
 ### Detect provider
 
 ```bash
-IMAGE_PROVIDER=$(grep "^IMAGE_PROVIDER=" .env 2>/dev/null | cut -d= -f2- || echo "openai")
+IMAGE_PROVIDER=$(grep "^IMAGE_PROVIDER=" .env 2>/dev/null | cut -d= -f2- || echo "openrouter")
 echo "Image provider: $IMAGE_PROVIDER"
 ```
+
+### Provider: OpenRouter (recommended)
+
+Best for: one API key for everything (LLM + image generation). Uses Gemini 2.5 Flash Image
+or Flux models via the chat completions API. Extremely cheap.
+
+Requires `OPENROUTER_API_KEY` in `.env`.
+
+```bash
+# Generate image via OpenRouter chat completions with modalities
+RESULT=$(curl -s -X POST "https://openrouter.ai/api/v1/chat/completions" \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-2.5-flash-preview:thinking",
+    "modalities": ["text", "image"],
+    "messages": [
+      {
+        "role": "user",
+        "content": "Generate an image: <prompt>. Output only the image, no text."
+      }
+    ]
+  }')
+
+# Extract base64 image from response
+python3 -c "
+import sys, json, base64, pathlib
+r = json.loads(sys.stdin.read())
+for part in r['choices'][0]['message']['content']:
+    if part.get('type') == 'image_url':
+        # data:image/png;base64,... format
+        data = part['image_url']['url'].split(',', 1)[1]
+        pathlib.Path('<output_path>').write_bytes(base64.b64decode(data))
+        print('<output_path>')
+        break
+" <<< "$RESULT"
+```
+
+Alternative models on OpenRouter:
+- `google/gemini-2.5-flash-preview:thinking` — fastest, cheapest
+- `black-forest-labs/flux-2-pro` — best photorealism (if available on OpenRouter)
 
 ### Provider: OpenAI (GPT Image)
 
@@ -121,7 +162,7 @@ After generating images, add them to the manifest's `assets` list:
 assets:
   - name: hero.png
     prompt: "<the prompt used>"
-    generator: openai  # or flux, ideogram, excalidraw
+    generator: openrouter  # or openai, flux, ideogram, excalidraw
     generated: <ISO 8601 timestamp>
     sizes:
       blog: assets/hero-blog.png
@@ -132,5 +173,5 @@ assets:
 ## Fallback when image generation is unavailable
 
 If no image API key is configured:
-1. Report to the user: "No image generation API configured. You can add your own images to the assets/ directory, or configure a provider in .env (IMAGE_PROVIDER=openai|flux|ideogram)."
+1. Report to the user: "No image generation API configured. You can add your own images to the assets/ directory, or configure a provider in .env (IMAGE_PROVIDER=openrouter|openai|flux|ideogram)."
 2. Continue the workflow without images. The publish step will skip image fields.
