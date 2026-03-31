@@ -1,0 +1,44 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Validate adapter contracts
+        run: bash test/validate-adapters.sh
+
+      - name: Manifest round-trip tests
+        run: bash test/manifest-roundtrip.sh
+
+      - name: Lint SKILL.md files
+        run: |
+          EXIT=0
+          for skill in skills/*/SKILL.md; do
+            # Check YAML frontmatter exists
+            if ! head -1 "$skill" | grep -q "^---"; then
+              echo "FAIL: $skill missing frontmatter"
+              EXIT=1
+            fi
+            # Check reasonable size
+            LINES=$(wc -l < "$skill")
+            if [ "$LINES" -gt 2500 ]; then
+              echo "WARN: $skill has $LINES lines (recommended < 2000)"
+            fi
+          done
+          exit $EXIT
