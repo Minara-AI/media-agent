@@ -5,3 +5,11 @@
 node_modules/
 __pycache__/
 .DS_Store
+.omc/
+
+# User content (personal posts, not part of the open-source project)
+content/posts/
+content/config/platforms.yaml
+
+# Blog repo (separate git repo)
+blog/

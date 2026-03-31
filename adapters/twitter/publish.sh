@@ -1,34 +1,38 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Twitter/X adapter — publishes threads via Twitter API v2
-# Uses OAuth 1.0a (HMAC-SHA1) for authentication
-# Requires: TWITTER_API_KEY, TWITTER_API_SECRET, TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_TOKEN_SECRET
+# Twitter/X adapter — publishes threads via bb-browser (Chrome automation)
+# Zero cost, no API key needed.
+# Requires: Chrome with --remote-debugging-port=9222, bb-browser CLI, logged-in Twitter.
 # Usage: publish.sh <variant-file> <assets-dir> [--dry-run]
 
 VARIANT_FILE="${1:?Usage: publish.sh <variant-file> <assets-dir> [--dry-run]}"
 ASSETS_DIR="${2:?Usage: publish.sh <variant-file> <assets-dir> [--dry-run]}"
 DRY_RUN="${3:-}"
 
-# Validate credentials
-for var in TWITTER_API_KEY TWITTER_API_SECRET TWITTER_ACCESS_TOKEN TWITTER_ACCESS_TOKEN_SECRET; do
-  if [ -z "${!var:-}" ]; then
-    echo "ERROR: $var not set" >&2
-    exit 1
-  fi
-done
+CDP_PORT="${CDP_PORT:-9222}"
+export NO_PROXY="*"
+export no_proxy="*"
 
-# Check Python3 available
-which python3 >/dev/null 2>&1 || { echo "ERROR: python3 required for Twitter adapter" >&2; exit 4; }
+BB="bb-browser"
+which $BB >/dev/null 2>&1 || { echo "ERROR: bb-browser not installed. Run: npm install -g bb-browser" >&2; exit 4; }
 
-# Parse thread: split by --- separators
-TWEETS=$(python3 -c "
-import sys
+# Verify Chrome CDP
+curl -s --noproxy '*' "http://127.0.0.1:$CDP_PORT/json/version" >/dev/null 2>&1 || {
+  echo "ERROR: Chrome not running with debugging port." >&2
+  exit 4
+}
 
-content = open('$VARIANT_FILE').read().strip()
-# Split by --- on its own line
-parts = []
-current = []
+bb() { $BB --port "$CDP_PORT" "$@" 2>/dev/null; }
+
+# Parse thread from variant file
+TWEETS_JSON=$(mktemp /tmp/media-agent-tweets-XXXXXX.json)
+trap "rm -f $TWEETS_JSON" EXIT
+
+python3 - "$VARIANT_FILE" "$TWEETS_JSON" << 'PYEOF'
+import sys, json
+content = open(sys.argv[1]).read().strip()
+parts, current = [], []
 for line in content.split('\n'):
     if line.strip() == '---':
         if current:
@@ -38,165 +42,153 @@ for line in content.split('\n'):
         current.append(line)
 if current:
     parts.append('\n'.join(current).strip())
-
-# Filter empty parts
 parts = [p for p in parts if p]
-import json
-print(json.dumps(parts))
-")
+with open(sys.argv[2], 'w') as f:
+    json.dump(parts, f, ensure_ascii=False)
+print(f"Thread: {len(parts)} tweets", file=sys.stderr)
+PYEOF
 
-TWEET_COUNT=$(python3 -c "import json; print(len(json.loads('$( echo "$TWEETS" | sed "s/'/\\\\'/g" )')))" 2>/dev/null || python3 -c "
-import json, sys
-tweets = json.loads(sys.stdin.read())
-print(len(tweets))
-" <<< "$TWEETS")
-
-echo "Thread: $TWEET_COUNT tweets" >&2
+TWEET_COUNT=$(python3 -c "import json; print(len(json.load(open('$TWEETS_JSON'))))")
 
 if [ "$DRY_RUN" = "--dry-run" ]; then
-  python3 -c "
+  python3 - "$TWEETS_JSON" << 'DRYEOF'
 import json, sys
-tweets = json.loads(sys.stdin.read())
-print('=== Twitter Thread Preview ===', file=sys.stderr)
-for i, tweet in enumerate(tweets, 1):
-    chars = len(tweet)
-    status = 'OK' if chars <= 280 else 'TOO LONG'
-    print(f'  [{i}/{len(tweets)}] ({chars} chars) [{status}]', file=sys.stderr)
-    print(f'  {tweet[:100]}...', file=sys.stderr) if len(tweet) > 100 else print(f'  {tweet}', file=sys.stderr)
-    print(file=sys.stderr)
-
-over = [i+1 for i, t in enumerate(tweets) if len(t) > 280]
-if over:
-    print(f'WARNING: Tweets {over} exceed 280 chars', file=sys.stderr)
-
-result = {'url': 'https://x.com/preview', 'id': 'dry-run', 'status': 'dry_run', 'tweets': len(tweets)}
-print(json.dumps(result))
-" <<< "$TWEETS"
+tweets = json.load(open(sys.argv[1]))
+print('=== Twitter Thread Preview (bb-browser) ===', file=sys.stderr)
+for i, t in enumerate(tweets, 1):
+    c = len(t)
+    s = 'OK' if c <= 280 else 'TOO LONG'
+    p = t[:100] + '...' if len(t) > 100 else t
+    print(f'  [{i}/{len(tweets)}] ({c} chars) [{s}]\n  {p}\n', file=sys.stderr)
+print(json.dumps({'url':'https://x.com/preview','id':'dry-run','status':'dry_run','tweets':len(tweets)}))
+DRYEOF
   exit 0
 fi
 
-# Post thread via Python (handles OAuth 1.0a signing)
-python3 << 'PYEOF'
-import json, sys, os, time, hmac, hashlib, base64, urllib.parse, uuid
-import urllib.request
+echo "Publishing thread ($TWEET_COUNT tweets) via bb-browser..." >&2
 
-API_KEY = os.environ['TWITTER_API_KEY']
-API_SECRET = os.environ['TWITTER_API_SECRET']
-ACCESS_TOKEN = os.environ['TWITTER_ACCESS_TOKEN']
-ACCESS_SECRET = os.environ['TWITTER_ACCESS_TOKEN_SECRET']
+get_tweet() { python3 -c "import json; print(json.load(open('$TWEETS_JSON'))[$1])"; }
 
-TWEET_URL = "https://api.x.com/2/tweets"
+# === Post first tweet via inline compose ===
+echo "  [1/$TWEET_COUNT] Posting first tweet..." >&2
 
-def oauth_sign(method, url, params, consumer_secret, token_secret):
-    """Generate OAuth 1.0a HMAC-SHA1 signature."""
-    sorted_params = "&".join(f"{urllib.parse.quote(k, safe='')}={urllib.parse.quote(v, safe='')}"
-                            for k, v in sorted(params.items()))
-    base_string = f"{method}&{urllib.parse.quote(url, safe='')}&{urllib.parse.quote(sorted_params, safe='')}"
-    signing_key = f"{urllib.parse.quote(consumer_secret, safe='')}&{urllib.parse.quote(token_secret, safe='')}"
-    signature = base64.b64encode(
-        hmac.new(signing_key.encode(), base_string.encode(), hashlib.sha1).digest()
-    ).decode()
-    return signature
+bb open "https://x.com/home"
+sleep 4
 
-def post_tweet(text, reply_to_id=None):
-    """Post a single tweet, optionally as a reply."""
-    oauth_params = {
-        "oauth_consumer_key": API_KEY,
-        "oauth_nonce": uuid.uuid4().hex,
-        "oauth_signature_method": "HMAC-SHA1",
-        "oauth_timestamp": str(int(time.time())),
-        "oauth_token": ACCESS_TOKEN,
-        "oauth_version": "1.0",
-    }
+# Find inline compose textbox
+SNAP=$(bb snapshot -i -c -d 6)
+TEXTBOX=$(echo "$SNAP" | grep -o 'textbox \[ref=[0-9]*\] "Post text"' | head -1 | sed 's/.*ref=\([0-9]*\).*/\1/')
 
-    signature = oauth_sign("POST", TWEET_URL, oauth_params, API_SECRET, ACCESS_SECRET)
-    oauth_params["oauth_signature"] = signature
+if [ -z "$TEXTBOX" ]; then
+  echo "ERROR: Could not find compose textbox on home page" >&2
+  exit 4
+fi
 
-    auth_header = "OAuth " + ", ".join(
-        f'{urllib.parse.quote(k, safe="")}="{urllib.parse.quote(v, safe="")}"'
-        for k, v in sorted(oauth_params.items())
-    )
+FIRST_TWEET=$(get_tweet 0)
+bb type "$TEXTBOX" "$FIRST_TWEET"
+sleep 1
 
-    payload = {"text": text}
-    if reply_to_id:
-        payload["reply"] = {"in_reply_to_tweet_id": reply_to_id}
+# Click post button via JS (data-testid is reliable)
+RESULT=$(bb eval '(function(){ var b=document.querySelector("[data-testid=\"tweetButtonInline\"]"); if(!b||b.disabled)return "not ready"; b.click(); return "posted"; })()')
 
-    data = json.dumps(payload).encode()
-    req = urllib.request.Request(
-        TWEET_URL,
-        data=data,
-        headers={
-            "Authorization": auth_header,
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
+if [ "$RESULT" != "posted" ]; then
+  echo "ERROR: Could not post first tweet: $RESULT" >&2
+  exit 4
+fi
 
-    try:
-        with urllib.request.urlopen(req) as resp:
-            result = json.loads(resp.read())
-            return result["data"]["id"], None
-    except urllib.error.HTTPError as e:
-        body = e.read().decode()
-        if e.code == 429:
-            print(f"ERROR: Rate limited by Twitter. Try again later.", file=sys.stderr)
-            return None, 2
-        elif e.code in (401, 403):
-            print(f"ERROR: Authentication failed ({e.code}): {body}", file=sys.stderr)
-            return None, 1
-        else:
-            print(f"ERROR: Twitter API error ({e.code}): {body}", file=sys.stderr)
-            return None, 4
+sleep 4
+echo "  [1/$TWEET_COUNT] Posted" >&2
 
-# Read tweets from stdin
-tweets = json.loads(sys.stdin.read())
+# === Get the URL of the tweet we just posted ===
+# Navigate to profile and find the latest tweet
+SCREEN_NAME=$(bb eval '(function(){ var el=document.querySelector("[data-testid=\"AppTabBar_Profile_Link\"]"); return el ? el.getAttribute("href").replace("/","") : ""; })()')
 
-print(f"Posting thread ({len(tweets)} tweets)...", file=sys.stderr)
+if [ -z "$SCREEN_NAME" ]; then
+  echo "ERROR: Could not determine screen name" >&2
+  # If only 1 tweet, still success
+  if [ "$TWEET_COUNT" -eq 1 ]; then
+    echo "{\"url\":\"https://x.com\",\"id\":\"single\",\"status\":\"published\",\"tweets_posted\":1}"
+    exit 0
+  fi
+  exit 4
+fi
 
-first_tweet_id = None
-prev_tweet_id = None
-posted_count = 0
+bb open "https://x.com/$SCREEN_NAME"
+sleep 4
 
-for i, tweet_text in enumerate(tweets):
-    if len(tweet_text) > 280:
-        print(f"WARNING: Tweet {i+1} is {len(tweet_text)} chars (max 280), truncating", file=sys.stderr)
-        tweet_text = tweet_text[:277] + "..."
+# Find the latest tweet URL
+LATEST_TWEET_URL=$(bb eval "(function(){
+  var articles = document.querySelectorAll('article[data-testid=\"tweet\"]');
+  if (!articles.length) return '';
+  var a = articles[0].querySelector('a[href*=\"/status/\"]');
+  return a ? 'https://x.com' + a.getAttribute('href') : '';
+})()")
 
-    tweet_id, error_code = post_tweet(tweet_text, reply_to_id=prev_tweet_id)
+if [ -z "$LATEST_TWEET_URL" ]; then
+  echo "WARN: Could not find tweet URL. Thread may be incomplete." >&2
+  if [ "$TWEET_COUNT" -eq 1 ]; then
+    echo "{\"url\":\"https://x.com/$SCREEN_NAME\",\"id\":\"posted\",\"status\":\"published\",\"tweets_posted\":1}"
+    exit 0
+  fi
+fi
 
-    if tweet_id is None:
-        print(f"ERROR: Failed at tweet {i+1}/{len(tweets)}. {posted_count} tweets posted.", file=sys.stderr)
-        if posted_count > 0 and first_tweet_id:
-            # Partial success: report what was posted
-            result = {
-                "url": f"https://x.com/i/status/{first_tweet_id}",
-                "id": first_tweet_id,
-                "status": "partial",
-                "tweets_posted": posted_count,
-                "tweets_total": len(tweets),
-            }
-            print(json.dumps(result))
-        sys.exit(error_code)
+FIRST_TWEET_URL="$LATEST_TWEET_URL"
+REPLY_TO_URL="$LATEST_TWEET_URL"
+echo "  First tweet: $FIRST_TWEET_URL" >&2
 
-    if i == 0:
-        first_tweet_id = tweet_id
-    prev_tweet_id = tweet_id
-    posted_count += 1
-    print(f"  [{i+1}/{len(tweets)}] Posted: {tweet_id}", file=sys.stderr)
+# === Post remaining tweets as replies ===
+for i in $(seq 1 $((TWEET_COUNT - 1))); do
+  TWEET_NUM=$((i + 1))
+  echo "  [$TWEET_NUM/$TWEET_COUNT] Replying..." >&2
 
-    # Rate limit safety: small delay between tweets
-    if i < len(tweets) - 1:
-        time.sleep(1)
+  TWEET_TEXT=$(get_tweet $i)
 
-# Success
-result = {
-    "url": f"https://x.com/i/status/{first_tweet_id}",
-    "id": first_tweet_id,
-    "status": "published",
-    "tweets_posted": posted_count,
-}
-print(json.dumps(result))
-PYEOF
-RET=$?
+  # Open the tweet to reply to
+  bb open "$REPLY_TO_URL"
+  sleep 4
 
-exit $RET
+  # Find reply textbox (retry up to 3 times)
+  REPLY_REF=""
+  for attempt in 1 2 3; do
+    SNAP=$(bb snapshot -i -c -d 8)
+    REPLY_REF=$(echo "$SNAP" | grep -o 'Post your reply.*textbox \[ref=[0-9]*\]' | head -1 | sed 's/.*ref=\([0-9]*\).*/\1/')
+    [ -n "$REPLY_REF" ] && break
+    sleep 2
+  done
+
+  if [ -z "$REPLY_REF" ]; then
+    echo "ERROR: Could not find reply box for tweet $TWEET_NUM" >&2
+    echo "{\"url\":\"$FIRST_TWEET_URL\",\"id\":\"partial\",\"status\":\"partial\",\"tweets_posted\":$i,\"tweets_total\":$TWEET_COUNT}"
+    exit 4
+  fi
+
+  bb type "$REPLY_REF" "$TWEET_TEXT"
+  sleep 1
+
+  # Click reply button
+  RESULT=$(bb eval '(function(){ var b=document.querySelector("[data-testid=\"tweetButtonInline\"]"); if(!b||b.disabled)return "not ready"; b.click(); return "replied"; })()')
+
+  if [ "$RESULT" != "replied" ]; then
+    echo "ERROR: Could not post reply $TWEET_NUM: $RESULT" >&2
+    echo "{\"url\":\"$FIRST_TWEET_URL\",\"id\":\"partial\",\"status\":\"partial\",\"tweets_posted\":$i,\"tweets_total\":$TWEET_COUNT}"
+    exit 4
+  fi
+
+  sleep 4
+
+  # Get URL of the reply we just posted (for next reply in chain)
+  REPLY_TO_URL=$(bb eval "(function(){
+    var articles = document.querySelectorAll('article[data-testid=\"tweet\"]');
+    var last = articles[articles.length - 1];
+    if (!last) return '';
+    var a = last.querySelector('a[href*=\"/status/\"]');
+    return a ? 'https://x.com' + a.getAttribute('href') : '';
+  })()")
+
+  [ -z "$REPLY_TO_URL" ] && REPLY_TO_URL="$LATEST_TWEET_URL"
+
+  echo "  [$TWEET_NUM/$TWEET_COUNT] Posted" >&2
+done
+
+echo "Thread published ($TWEET_COUNT tweets)" >&2
+echo "{\"url\":\"$FIRST_TWEET_URL\",\"id\":\"thread\",\"status\":\"published\",\"tweets_posted\":$TWEET_COUNT}"
