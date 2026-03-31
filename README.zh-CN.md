@@ -3,6 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/Minara-AI/media-agent/actions/workflows/test.yml/badge.svg)](https://github.com/Minara-AI/media-agent/actions)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Skills-blueviolet?logo=anthropic&logoColor=white)](https://claude.ai/claude-code)
+[![Excalidraw Skill](https://img.shields.io/badge/Excalidraw-Diagrams-6965db?logo=excalidraw&logoColor=white)](https://github.com/Minara-AI/excalidraw-skill)
+[![Twitter Bridge](https://img.shields.io/badge/Twitter-bb--browser-000000?logo=x&logoColor=white)](https://github.com/replica882/twitter-bridge-mcp)
+[![bb-browser](https://img.shields.io/badge/bb--browser-Chrome_Automation-45ba4b)](https://github.com/epiral/bb-browser)
 
 [English](README.md)
 
@@ -50,7 +53,17 @@
 
 ## 快速开始
 
-### 安装
+### 方式一：一句话安装（推荐）
+
+在 Claude Code 中直接说：
+
+```
+帮我安装 media-agent，从 https://github.com/Minara-AI/media-agent 克隆，运行 install.sh，然后帮我配置平台。
+```
+
+Claude 会自动克隆仓库、运行安装脚本、引导你配置每个平台。
+
+### 方式二：脚本安装
 
 ```bash
 git clone https://github.com/Minara-AI/media-agent.git
@@ -58,7 +71,13 @@ cd media-agent
 bash install.sh
 ```
 
-安装脚本支持全局安装（`~/.claude/skills/`）和项目级安装（`.claude/skills/`）。
+安装脚本支持全局安装（`~/.claude/skills/`）和项目级安装（`.claude/skills/`）。还会引导安装可选依赖（excalidraw-skill、bb-browser、twitter-bridge-mcp）。
+
+### 方式三：手动安装
+
+```bash
+git clone https://github.com/Minara-AI/media-agent.git ~/.claude/skills/media-agent
+```
 
 ### 配置
 

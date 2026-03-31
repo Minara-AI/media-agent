@@ -3,6 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/Minara-AI/media-agent/actions/workflows/test.yml/badge.svg)](https://github.com/Minara-AI/media-agent/actions)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Skills-blueviolet?logo=anthropic&logoColor=white)](https://claude.ai/claude-code)
+[![Excalidraw Skill](https://img.shields.io/badge/Excalidraw-Diagrams-6965db?logo=excalidraw&logoColor=white)](https://github.com/Minara-AI/excalidraw-skill)
+[![Twitter Bridge](https://img.shields.io/badge/Twitter-bb--browser-000000?logo=x&logoColor=white)](https://github.com/replica882/twitter-bridge-mcp)
+[![bb-browser](https://img.shields.io/badge/bb--browser-Chrome_Automation-45ba4b)](https://github.com/epiral/bb-browser)
 
 [中文文档](README.zh-CN.md)
 
@@ -50,7 +53,17 @@ Each skill works independently. Use `/media` for the full workflow, or run indiv
 
 ## Quick Start
 
-### Install
+### Method 1: One Prompt (Recommended)
+
+Just tell Claude Code:
+
+```
+Help me install media-agent from https://github.com/Minara-AI/media-agent — clone the repo, run install.sh, and set up my platforms.
+```
+
+Claude will clone the repo, run the installer, and walk you through configuring each platform.
+
+### Method 2: Script Install
 
 ```bash
 git clone https://github.com/Minara-AI/media-agent.git
@@ -58,7 +71,13 @@ cd media-agent
 bash install.sh
 ```
 
-The installer lets you choose global (`~/.claude/skills/`) or local (`.claude/skills/`) install.
+The installer lets you choose global (`~/.claude/skills/`) or local (`.claude/skills/`) install. It also offers to set up optional dependencies (excalidraw-skill, bb-browser for Twitter).
+
+### Method 3: Manual Install
+
+```bash
+git clone https://github.com/Minara-AI/media-agent.git ~/.claude/skills/media-agent
+```
 
 ### Configure
 

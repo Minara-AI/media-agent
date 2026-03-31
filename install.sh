@@ -142,21 +142,85 @@ echo "    [ready]   Twitter/X (via bb-browser, zero cost)"
 echo "    [planned] WeChat Official Account"
 echo ""
 
+# ─────────────────────────────────
+# Optional dependencies
+# ─────────────────────────────────
+echo "  ─────────────────────────────────"
+echo "  Optional dependencies"
+echo ""
+
+# --- Optional: bb-browser (for Twitter) ---
+if ! which bb-browser >/dev/null 2>&1; then
+  echo "  [A] bb-browser — Chrome automation for zero-cost Twitter publishing"
+  echo "      The Twitter adapter uses bb-browser to control Chrome instead of"
+  echo "      the paid Twitter API. No API key needed."
+  echo "      https://github.com/epiral/bb-browser"
+  echo ""
+  read -r -p "  Install bb-browser? [y/N] " INSTALL_BB
+  case "$INSTALL_BB" in
+    [yY][eE][sS]|[yY])
+      if which npm >/dev/null 2>&1; then
+        echo "  Installing bb-browser..."
+        npm install -g bb-browser 2>/dev/null && echo "  [OK] bb-browser installed" || {
+          echo "  [!] Install failed. Try manually: npm install -g bb-browser"
+        }
+        # Install community adapters
+        if which bb-browser >/dev/null 2>&1; then
+          NO_PROXY="*" bb-browser site update 2>/dev/null && echo "  [OK] bb-browser site adapters updated" || true
+        fi
+      else
+        echo "  [!] npm not found. Install Node.js first, then: npm install -g bb-browser"
+      fi
+      ;;
+    *)
+      echo "  Skipped. Install later: npm install -g bb-browser"
+      ;;
+  esac
+  echo ""
+else
+  echo "  [OK] bb-browser already installed"
+  echo ""
+fi
+
+# --- Optional: twitter-bridge-mcp ---
+echo "  [B] twitter-bridge-mcp — MCP server for full Twitter automation"
+echo "      Provides 19 Twitter tools (post, reply, like, retweet, search, etc.)"
+echo "      via browser automation. Works alongside bb-browser."
+echo "      https://github.com/replica882/twitter-bridge-mcp"
+echo ""
+if [ ! -d "$HOME/.twitter-bridge-mcp" ] && [ ! -d "/tmp/twitter-bridge-mcp" ]; then
+  read -r -p "  Install twitter-bridge-mcp? [y/N] " INSTALL_TWITTER_MCP
+  case "$INSTALL_TWITTER_MCP" in
+    [yY][eE][sS]|[yY])
+      echo "  Cloning twitter-bridge-mcp..."
+      git clone --depth 1 https://github.com/replica882/twitter-bridge-mcp.git "$HOME/.twitter-bridge-mcp" 2>/dev/null
+      cd "$HOME/.twitter-bridge-mcp" && npm install 2>/dev/null && cd - >/dev/null
+      echo "  [OK] twitter-bridge-mcp installed to ~/.twitter-bridge-mcp"
+      echo ""
+      echo "  To use: start Chrome with --remote-debugging-port=9222,"
+      echo "  log into Twitter, then run: cd ~/.twitter-bridge-mcp && node server.mjs"
+      ;;
+    *)
+      echo "  Skipped. Install later:"
+      echo "  git clone https://github.com/replica882/twitter-bridge-mcp.git ~/.twitter-bridge-mcp"
+      ;;
+  esac
+  echo ""
+else
+  echo "  [OK] twitter-bridge-mcp already installed"
+  echo ""
+fi
+
 # --- Optional: excalidraw-skill ---
 if [ ! -d "$HOME/.claude/skills/excalidraw-skill" ] && [ ! -d ".claude/skills/excalidraw" ]; then
-  echo "  ─────────────────────────────────"
-  echo "  Optional: excalidraw-skill"
-  echo ""
-  echo "  Generate hand-drawn diagrams from natural language."
-  echo "  media-agent's /media-image skill uses it for architecture"
-  echo "  diagrams, flowcharts, and illustrations."
-  echo ""
-  echo "  GitHub: https://github.com/Minara-AI/excalidraw-skill"
+  echo "  [C] excalidraw-skill — Hand-drawn diagrams from natural language"
+  echo "      media-agent's /media-image skill uses it for architecture"
+  echo "      diagrams, flowcharts, and illustrations."
+  echo "      https://github.com/Minara-AI/excalidraw-skill"
   echo ""
   read -r -p "  Install excalidraw-skill? [y/N] " INSTALL_EXCALIDRAW
   case "$INSTALL_EXCALIDRAW" in
     [yY][eE][sS]|[yY])
-      echo ""
       echo "  Cloning excalidraw-skill..."
       git clone --depth 1 https://github.com/Minara-AI/excalidraw-skill.git /tmp/excalidraw-skill-install 2>/dev/null
       bash /tmp/excalidraw-skill-install/install.sh "${2:-.}" 2>/dev/null || {
@@ -170,6 +234,10 @@ if [ ! -d "$HOME/.claude/skills/excalidraw-skill" ] && [ ! -d ".claude/skills/ex
       echo "  Skipped. Install later: https://github.com/Minara-AI/excalidraw-skill"
       ;;
   esac
+  echo ""
+else
+  echo "  [OK] excalidraw-skill already installed"
+  echo ""
 fi
 
 echo ""
