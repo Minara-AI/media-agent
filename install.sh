@@ -4,9 +4,29 @@ set -euo pipefail
 # ============================================================
 # media-agent — One-Command Installer
 # https://github.com/Minara-AI/media-agent
+#
+# Usage:
+#   curl -fsSL https://raw.githubusercontent.com/Minara-AI/media-agent/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Minara-AI/media-agent/main/install.sh | bash -s -- --global
+#   curl -fsSL https://raw.githubusercontent.com/Minara-AI/media-agent/main/install.sh | bash -s -- --local
 # ============================================================
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_URL="https://github.com/Minara-AI/media-agent.git"
+REMOTE_INSTALL=false
+
+# Detect if running from a local clone or via curl pipe
+# When piped (curl | bash), BASH_SOURCE is empty; $0 is "bash"
+if [ -n "${BASH_SOURCE[0]:-}" ] && [ "${BASH_SOURCE[0]}" != "bash" ] && [ -f "$(dirname "${BASH_SOURCE[0]}")/CLAUDE.md" ]; then
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+else
+  # Running via curl pipe or outside repo — clone to temp dir
+  REMOTE_INSTALL=true
+  TMPDIR_INSTALL="$(mktemp -d)"
+  trap 'rm -rf "$TMPDIR_INSTALL"' EXIT
+  echo "  Fetching media-agent..."
+  git clone --depth 1 "$REPO_URL" "$TMPDIR_INSTALL" 2>/dev/null
+  SCRIPT_DIR="$TMPDIR_INSTALL"
+fi
 
 echo ""
 echo "  media-agent Installer"

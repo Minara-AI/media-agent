@@ -53,7 +53,25 @@
 
 ## 快速开始
 
-### 方式一：一句话安装（推荐）
+### 方式一：一行命令安装（推荐）
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Minara-AI/media-agent/main/install.sh | bash
+```
+
+一行搞定。脚本会自动克隆仓库、安装所有技能，并引导你完成配置。
+
+可以用 `--global` 或 `--local` 跳过选择提示：
+
+```bash
+# 全局安装（~/.claude/skills/）
+curl -fsSL https://raw.githubusercontent.com/Minara-AI/media-agent/main/install.sh | bash -s -- --global
+
+# 项目级安装（仅当前项目可用）
+curl -fsSL https://raw.githubusercontent.com/Minara-AI/media-agent/main/install.sh | bash -s -- --local
+```
+
+### 方式二：一句话安装
 
 在 Claude Code 中直接说：
 
@@ -63,7 +81,7 @@
 
 Claude 会自动克隆仓库、运行安装脚本、引导你配置每个平台。
 
-### 方式二：脚本安装
+### 方式三：克隆安装
 
 ```bash
 git clone https://github.com/Minara-AI/media-agent.git
@@ -73,7 +91,7 @@ bash install.sh
 
 安装脚本支持全局安装（`~/.claude/skills/`）和项目级安装（`.claude/skills/`）。还会引导安装可选依赖（excalidraw-skill、bb-browser、twitter-bridge-mcp）。
 
-### 方式三：手动安装
+### 方式四：手动安装
 
 ```bash
 git clone https://github.com/Minara-AI/media-agent.git ~/.claude/skills/media-agent

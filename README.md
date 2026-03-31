@@ -53,7 +53,25 @@ Each skill works independently. Use `/media` for the full workflow, or run indiv
 
 ## Quick Start
 
-### Method 1: One Prompt (Recommended)
+### Method 1: One-Line Install (Recommended)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Minara-AI/media-agent/main/install.sh | bash
+```
+
+That's it. The script clones the repo, installs all skills, and walks you through setup.
+
+Pass `--global` or `--local` to skip the prompt:
+
+```bash
+# Global install (~/.claude/skills/)
+curl -fsSL https://raw.githubusercontent.com/Minara-AI/media-agent/main/install.sh | bash -s -- --global
+
+# Local install (current project only)
+curl -fsSL https://raw.githubusercontent.com/Minara-AI/media-agent/main/install.sh | bash -s -- --local
+```
+
+### Method 2: One Prompt
 
 Just tell Claude Code:
 
@@ -63,7 +81,7 @@ Help me install media-agent from https://github.com/Minara-AI/media-agent — cl
 
 Claude will clone the repo, run the installer, and walk you through configuring each platform.
 
-### Method 2: Script Install
+### Method 3: Clone + Install
 
 ```bash
 git clone https://github.com/Minara-AI/media-agent.git
@@ -73,7 +91,7 @@ bash install.sh
 
 The installer lets you choose global (`~/.claude/skills/`) or local (`.claude/skills/`) install. It also offers to set up optional dependencies (excalidraw-skill, bb-browser for Twitter).
 
-### Method 3: Manual Install
+### Method 4: Manual Install
 
 ```bash
 git clone https://github.com/Minara-AI/media-agent.git ~/.claude/skills/media-agent
