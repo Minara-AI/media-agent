@@ -10,9 +10,11 @@ image_upload: api
 image_sizes:
   header: { width: 900, height: 383 }
   thumb: { width: 200, height: 200 }
-status: v1.1  # not yet implemented
+auth_env_vars:
+  - WECHAT_APP_ID
+  - WECHAT_APP_SECRET
 notes: |
-  WeChat requires: appid + appsecret, IP whitelist on mp.weixin.qq.com,
-  content converted from markdown to HTML, cover image uploaded as material first.
-  Publishing flow: get access_token → upload cover image → create draft → submit publish.
-  Content may be rejected during platform review.
+  WeChat requires: appid + appsecret, IP whitelist on WeChat developer platform.
+  Content must be HTML with inline styles. All images must be uploaded to WeChat material library.
+  Publishing flow: get access_token → upload cover image → upload content images → create draft → submit publish.
+  Content may be rejected during platform review (审核).
