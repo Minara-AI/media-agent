@@ -1,0 +1,29 @@
+# Voice Calibration Config
+# Provide writing samples so the system matches your personal style.
+# This takes priority over generic de-AI rules in lib/humanize.md.
+
+# Paste 2-3 paragraphs of your own writing here.
+# The system will extract voice traits automatically.
+samples:
+  - |
+    # Paste your first writing sample here.
+    # Blog post, README, tweet thread — anything in your natural voice.
+  - |
+    # (Optional) A second sample for better calibration.
+
+# Or manually specify traits (auto-extracted if samples are provided):
+traits:
+  sentence_length: medium      # short | medium | long
+  vocabulary: conversational   # academic | technical | conversational | casual
+  humor: occasional            # none | dry | occasional | frequent
+  perspective: first_person    # first_person | second_person | third_person
+  formality: informal          # formal | neutral | informal
+
+# Per-platform tone overrides (optional):
+# platform_overrides:
+#   devto:
+#     formality: informal
+#     humor: frequent
+#   wechat:
+#     vocabulary: conversational
+#     perspective: first_person

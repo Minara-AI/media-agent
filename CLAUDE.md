@@ -42,6 +42,14 @@ A set of Claude Code skills that let developers write content once and publish t
 
 **v2 (planned):** 小红书, 知乎, Medium
 
+## Humanization (de-AI writing)
+
+All content passes through a humanization layer defined in `lib/humanize.md`:
+- **29 AI writing patterns** detected and rewritten (based on Wikipedia's WikiProject AI Cleanup)
+- **Chinese-specific de-AI rules** (去AI味): anti-成语堆砌, 口语化, structural de-rigidification
+- **Voice calibration** via `content/config/voice.yaml` — provide writing samples to match personal style
+- Applied during drafting (rules active while writing) and as a dedicated audit pass before variant generation
+
 ## Image generation
 
 Configurable backend via `IMAGE_PROVIDER` in `.env`:

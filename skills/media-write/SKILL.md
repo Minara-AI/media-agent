@@ -24,6 +24,7 @@ Write content collaboratively, then generate platform-specific variants.
 Before starting, read these shared library files:
 - Read `lib/adapter-discovery.md` for adapter format.md location
 - Read `lib/manifest-ops.md` for manifest creation
+- Read `lib/humanize.md` for de-AI writing rules (MUST read before any writing)
 
 ## Step 1: Get the Brief
 
@@ -74,11 +75,14 @@ Work through the article section by section:
 
 ### Writing guidelines
 
+- **Apply `lib/humanize.md` rules from the start.** Do not draft in AI-speak and fix later.
 - Write in the user's voice (if brand voice is configured in `content/config/voice.yaml`, read it first)
 - Include code examples where relevant for a developer audience
 - Use clear headers (## for sections, ### for subsections)
 - Keep paragraphs concise (3-5 sentences)
 - Add image placeholders where visuals would help: `![description](assets/placeholder.png)`
+- Avoid the 29 AI patterns listed in `lib/humanize.md` — no significance inflation, no AI vocabulary, no filler phrases
+- For Chinese content, follow the 中文去AI味 section: use 口语化 tone, avoid 成语堆砌, add personal perspective
 
 ## Step 4: Finalize Source
 
@@ -89,7 +93,38 @@ Use AskUserQuestion:
 - A) Yes, generate variants
 - B) I want to edit more (specify which section)
 
-## Step 5: Generate Platform Variants
+## Step 5: Humanization Audit
+
+After the user approves the full draft, run a dedicated de-AI pass before generating variants.
+
+### Process
+
+1. Re-read `lib/humanize.md` to refresh the pattern list.
+2. Read the complete `source.md`.
+3. Scan for each of the 29 AI writing patterns. For Chinese content, also apply the 中文去AI味 checks.
+4. For each flagged passage, rewrite it following the "Fix" column in the pattern table.
+5. Show the user a summary of changes:
+   ```
+   Humanization audit — <N> patterns found and fixed:
+     - Section 2: removed significance inflation ("pivotal moment" → "useful")
+     - Section 4: replaced AI vocabulary ("leverage" → "use")
+     - Section 5: removed filler phrase ("It's worth noting that")
+   ```
+6. Use AskUserQuestion:
+   "Here are the humanization edits. Accept all, or review individually?"
+   - A) Accept all
+   - B) Review each change
+   - C) Skip humanization (keep original)
+7. Apply accepted changes to `source.md`.
+
+### Voice calibration (optional)
+
+If `content/config/voice.yaml` exists:
+- Compare the draft against the user's writing samples
+- Adjust sentence length, vocabulary level, and tone to match
+- Voice.yaml traits take priority over generic humanization rules
+
+## Step 6: Generate Platform Variants
 
 For each configured platform adapter:
 
@@ -106,7 +141,7 @@ For each configured platform adapter:
 
 3. Write the variant to `<post_dir>/variants/<name>.md`
 
-## Step 6: Create Manifest
+## Step 7: Create Manifest
 
 Create `manifest.yaml` following the format in `lib/manifest-ops.md`:
 
@@ -131,7 +166,7 @@ variants:
 
 Use the atomic write pattern from `lib/manifest-ops.md`.
 
-## Step 7: Summary
+## Step 8: Summary
 
 ```
 Article written and variants generated:
