@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.0] - 2026-04-01
+
+### Added
+- De-AI humanization layer: 29 AI writing patterns detected and rewritten (lib/humanize.md)
+- Chinese-specific de-AI rules (去AI味): anti-成语堆砌, 口语化 tone, structural fixes
+- Voice calibration via writing samples (content/config/voice.yaml)
+- Humanization audit pass in `/media-write` (Step 5) — scans full draft before variant generation
+- Voice configuration wizard in `/media-setup` (Step 5) — paste samples or describe your style
+
 ## [0.1.0] - 2026-03-31
 
 ### Added

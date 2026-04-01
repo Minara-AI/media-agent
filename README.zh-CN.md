@@ -122,6 +122,18 @@ cp .env.example .env
 /media-publish  # 只发布已有内容
 ```
 
+## 去 AI 味（人性化写作）
+
+AI 生成的内容一看就是 AI 写的。media-agent 内置了去 AI 味系统：
+
+- **29 种 AI 写作模式**自动检测和改写 — 意义膨胀、AI 高频词（"赋能"、"闭环"、"底层逻辑"）、废话填充、破折号滥用等（基于 [Wikipedia AI Cleanup 项目](https://en.wikipedia.org/wiki/Wikipedia:WikiProject_AI_Cleanup)）
+- **中文专项规则** — 反成语堆砌、口语化表达、打破过于工整的结构
+- **个人风格校准** — 在 `/media-setup` 中粘贴你以前写的文章，系统会匹配你的个人风格，而不是套用通用规则
+
+两层防护：
+1. **写作时** — `/media-write` 起草每个段落时就遵循去 AI 味规则
+2. **审计时** — 全文完成后专门扫描一遍，逐条找出残留的 AI 模式并展示修改内容
+
 ## 图片生成
 
 通过 `.env` 中的 `IMAGE_PROVIDER` 配置后端：

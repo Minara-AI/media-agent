@@ -122,6 +122,18 @@ Or use individual skills:
 /media-publish  # Just publish existing content
 ```
 
+## De-AI Writing (Humanization)
+
+AI-generated content sounds like AI. media-agent fixes this with a built-in humanization layer:
+
+- **29 AI writing patterns** detected and rewritten — significance inflation, AI vocabulary ("delve", "leverage", "landscape"), filler phrases, em dash overuse, and 24 more (based on [Wikipedia's AI Cleanup project](https://en.wikipedia.org/wiki/Wikipedia:WikiProject_AI_Cleanup))
+- **Chinese-specific rules** (去AI味) — anti-成语堆砌, 口语化 tone, structural de-rigidification
+- **Voice calibration** — paste your own writing samples in `/media-setup` and the system matches your personal style instead of applying generic rules
+
+The humanization works at two levels:
+1. **During writing** — rules are active while `/media-write` drafts each section
+2. **Audit pass** — after the full draft, a dedicated scan catches any remaining AI patterns and shows you what it fixed
+
 ## Image Generation
 
 Configurable backend via `IMAGE_PROVIDER` in `.env`:
